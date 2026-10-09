@@ -50,37 +50,31 @@ jobs:
           python -m py_compile *.py
           python -c "import importlib; [importlib.import_module(mod) for mod in ('lang', 'recursos', 'bt3eff_core', 'ps2tex', 'texview', 'hexdocs', 'hexview', 'previa', 'editor3d', 'animacao', 'seletor_cor', 'tutoriais')]"
 
-      - name: Compilar el .exe
+      - name: Compilar el .exe único
         working-directory: ${{ env.APP_DIR }}
         run: |
-          pyinstaller --noconfirm --clean --onefile --windowed --name "${{ env.APP_NAME }}" --icon icone.ico --hidden-import texview --hidden-import hexview --hidden-import hexdocs --hidden-import previa --hidden-import editor3d --hidden-import animacao --hidden-import seletor_cor --hidden-import tutoriais --hidden-import ps2tex --hidden-import recursos --hidden-import lang --hidden-import bt3eff_core --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageTk "${{ env.MAIN_FILE }}"
+          pyinstaller --noconfirm --clean --onefile --windowed --name "${{ env.APP_NAME }}" --icon icone.ico --add-data "icone.ico;." --add-data "recursos.dat;." --add-data "modelos;modelos" --add-data "extras;extras" --add-data "cenas;cenas" --add-data "auras;auras" --add-data "suportes;suportes" --add-data "pre_disparo;pre_disparo" --hidden-import texview --hidden-import hexview --hidden-import hexdocs --hidden-import previa --hidden-import editor3d --hidden-import animacao --hidden-import seletor_cor --hidden-import tutoriais --hidden-import ps2tex --hidden-import recursos --hidden-import lang --hidden-import bt3eff_core --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageTk "${{ env.MAIN_FILE }}"
 
-      - name: Armar la carpeta final
+      - name: Preparar ejecutable para distribucion
         working-directory: ${{ env.APP_DIR }}
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release
           Copy-Item "dist/${{ env.APP_NAME }}.exe" release/
-          Copy-Item recursos.dat, icone.ico release/ -ErrorAction SilentlyContinue
-          if (Test-Path LEIA-ME.txt) { Copy-Item LEIA-ME.txt release/ }
-          $folders = @('modelos', 'extras', 'cenas', 'auras', 'suportes', 'pre_disparo')
-          foreach ($d in $folders) {
-            if (Test-Path $d) { Copy-Item -Recurse $d release/ }
-          }
           Get-ChildItem release
 
       - name: Subir el resultado (artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: Effects_Max_Ultra_Legendary_Studios_Windows
-          path: ${{ env.APP_DIR }}/release/*
+          name: Effects_Max_Ultra_Legendary_Studios_EXE
+          path: ${{ env.APP_DIR }}/release/${{ env.APP_NAME }}.exe
           if-no-files-found: error
 
       - name: Crear .zip para el Release
         if: startsWith(github.ref, 'refs/tags/v')
         working-directory: ${{ env.APP_DIR }}/release
         shell: pwsh
-        run: Compress-Archive -Path * -DestinationPath "../Effects_Max_Ultra_Legendary_Studios_${{ github.ref_name }}.zip"
+        run: Compress-Archive -Path "${{ env.APP_NAME }}.exe" -DestinationPath "../Effects_Max_Ultra_Legendary_Studios_${{ github.ref_name }}.zip"
 
       - name: Publicar Release
         if: startsWith(github.ref, 'refs/tags/v')
