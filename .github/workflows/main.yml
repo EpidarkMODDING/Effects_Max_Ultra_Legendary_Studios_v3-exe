@@ -1,0 +1,109 @@
+name: Build EXE (Windows)
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # necesario para publicar el .zip en Releases al subir un tag (v1.9, v2.0...)
+
+env:
+  APP_NAME: Effects Max Ultra Legendary Studios
+  MAIN_FILE: Effects_Max_Ultra_Legendary_Studios.py
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Buscar la carpeta del programa
+        run: |
+          # funciona tanto si subes los archivos a la raiz como dentro de una subcarpeta
+          MAIN_PATH=$(find . -type f -name "$MAIN_FILE" -not -path "./.git/*" | head -n 1)
+          if [ -z "$MAIN_PATH" ]; then
+            echo "::error::No se encontro $MAIN_FILE en el repositorio"
+            exit 1
+          fi
+          APP_DIR=$(dirname "$MAIN_PATH")
+          echo "APP_DIR=$APP_DIR" >> "$GITHUB_ENV"
+          echo "Programa encontrado en: $APP_DIR"
+          ls -la "$APP_DIR"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow
+
+      - name: Comprobar que compila y que los modulos importan
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          python -m py_compile *.py
+          python - <<'PY'
+          import importlib
+          for mod in ("lang", "recursos", "bt3eff_core", "ps2tex", "texview", "hexdocs", "hexview",
+                      "previa", "editor3d", "animacao", "seletor_cor", "tutoriais"):
+              importlib.import_module(mod)
+              print("ok:", mod)
+          PY
+
+      - name: Compilar el .exe
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          # Los modulos secundarios se importan "bajo demanda" (al abrir cada ventana),
+          # por eso se declaran como hidden-import para que PyInstaller los incluya.
+          pyinstaller --noconfirm --clean --onefile --windowed \
+            --name "$APP_NAME" \
+            --icon icone.ico \
+            --hidden-import texview --hidden-import hexview --hidden-import hexdocs \
+            --hidden-import previa --hidden-import editor3d --hidden-import animacao \
+            --hidden-import seletor_cor --hidden-import tutoriais --hidden-import ps2tex \
+            --hidden-import recursos --hidden-import lang --hidden-import bt3eff_core \
+            --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageTk \
+            "$MAIN_FILE"
+
+      - name: Armar la carpeta final
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          # El programa busca recursos.dat e icone.ico AL LADO del .exe (no van dentro de el)
+          mkdir -p release
+          cp "dist/$APP_NAME.exe" release/
+          cp recursos.dat icone.ico release/
+          [ -f LEIA-ME.txt ] && cp LEIA-ME.txt release/ || true
+          for d in modelos extras cenas auras suportes pre_disparo; do
+            [ -d "$d" ] && cp -r "$d" release/ || true
+          done
+          ls -la release
+
+      - name: Subir el resultado (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Effects_Max_Ultra_Legendary_Studios_Windows
+          path: ${{ env.APP_DIR }}/release/*
+          if-no-files-found: error
+
+      - name: Crear .zip para el Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: ${{ env.APP_DIR }}/release
+        shell: pwsh
+        run: Compress-Archive -Path * -DestinationPath "../Effects_Max_Ultra_Legendary_Studios_${{ github.ref_name }}.zip"
+
+      - name: Publicar Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.APP_DIR }}/Effects_Max_Ultra_Legendary_Studios_${{ github.ref_name }}.zip
