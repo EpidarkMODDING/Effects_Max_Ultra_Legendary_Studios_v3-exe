@@ -1,0 +1,37 @@
+Effects Max Ultra Legendary Studios v1.9
+(antigo BT3 Effect Studio)
+========================================
+Como rodar: instale o Python 3 (python.org, marque "Add to PATH") e dê dois cliques em
+Effects_Max_Ultra_Legendary_Studios.py, ou rode:
+  python Effects_Max_Ultra_Legendary_Studios.py
+
+Versão .exe (Windows):
+  Dê dois cliques em compilar_exe.bat. Ele instala o PyInstaller e gera
+  dist\Effects Max Ultra Legendary Studios.exe, já com o ícone do programa.
+  O .exe usa o recursos.dat e o icone.ico que ficam na mesma pasta dele.
+
+Arquivos:
+  Effects_Max_Ultra_Legendary_Studios.py  interface
+  texview.py / hexview.py / hexdocs.py  texturas e hexadecimal
+  seletor_cor.py        seletor de cor (roda, imagem de referência, paleta da textura)
+  previa.py             prévia com as texturas reais (Tamanho e tempo e Editor 3D)
+  animacao.py           leitor de animações .anm/.canm (menu Ferramentas)
+  tutoriais.py  textos dos tutoriais
+  editor3d.py  editor 3D de quadros-chave
+  bt3eff_core.py        leitura/gravação dos .pak de efeito
+  ps2tex.py             texturas do PS2 (decodificar / reduzir cores)
+  recursos.py           leitura do pacote protegido
+  lang.py               textos em PT-BR / ES / EN
+  recursos.dat          modelos, extras e cenas do projeto (protegidos)
+
+Pastas opcionais (o programa soma ao que está no recursos.dat):
+  modelos/  extras/ (+ extras.json)  cenas/  auras/  suportes/  pre_disparo/   -> arquivos seus (subpastas viram grupos), NÃO protegidos
+
+Backups:
+  Ao salvar, o arquivo anterior vai para a pasta 'backups' ao lado do programa (uma subpasta por EFF
+  e por arquivo, com data e hora). Nada extra fica na pasta do EFF, então o Sparking Studio exporta
+  normalmente. Os grupos dos mini-efeitos ficam em 'dados/grupos'.
+
+Como usar cada função: menu Ajuda → Tutoriais.
+
+Sempre teste num .pak copiado antes de mexer nos originais.
